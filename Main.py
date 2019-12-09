@@ -7,7 +7,7 @@ import os
 
 import PyPDF2
 
-import helper_functions
+import HelperFunctions
 
 # Path to directory that contains the PDF documents with our answers
 working_directory = pathlib.Path(
@@ -35,7 +35,7 @@ my_PDF_merger = PyPDF2.PdfFileMerger()
 for file_path_obj in pdf_file_paths:
     my_PDF_merger.append(
         str(file_path_obj),
-        bookmark=helper_functions.extract_student_name_from(file_path_obj)
+        bookmark=HelperFunctions.extract_student_name_from(file_path_obj)
     )
 
 # Write the collection PDF to a file
