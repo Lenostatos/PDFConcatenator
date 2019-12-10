@@ -7,7 +7,7 @@ import regex
 class HeaderExtractor(abc.ABC):
     @abc.abstractmethod
     def __init__(self, file_path: pathlib.Path):
-        raise NotImplementedError()
+        pass
 
     @abc.abstractmethod
     def extract_header(self) -> str:
@@ -15,15 +15,33 @@ class HeaderExtractor(abc.ABC):
 
 
 class SICFileName(HeaderExtractor):
-    def __init__(self,  file_path: pathlib.Path):
+    def __init__(self, file_path: pathlib.Path):
+        super().__init__(file_path)
         self._file_name = file_path.stem
         self._file_name_elements = file_path.stem.split(sep='_')
 
     def matches_pattern(self) -> bool:
-        return regex.fullmatch(
-            pattern='SIC_0[1-4]_[[:upper:]]{2,}[[:lower:]]*',
-            string=self._file_name
-        )
+        if len(self._file_name_elements) != 3:
+            return False
+
+        if self._file_name_elements[0] != 'SIC':
+            return False
+
+        if not len(self._file_name_elements[1]) == 2:
+            return False
+
+        if not self._file_name_elements[1].isdigit():
+            return False
+
+        if not self._file_name_elements[2][:2].isupper():
+            return False
+
+        return True
+
+        # return regex.fullmatch(
+        #     pattern='SIC_0[1-4]_[[:upper:]]{2,}[[:lower:]]*',
+        #     string=self._file_name
+        # )
 
     def extract_header(self) -> str:
         if self.matches_pattern():
