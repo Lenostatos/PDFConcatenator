@@ -49,36 +49,55 @@ class SICFileName(HeaderExtractor):
         else:
             return self.get_sanitized_file_name()
 
+    @staticmethod
+    def _format_abbrev_name(abbrev_name: str) -> str:
+
+        # Count the capital letters at the beginning of the name
+        num_start_capitals = 0
+        while abbrev_name[num_start_capitals].isupper():
+            num_start_capitals += 1
+
+        # Concatenate each starting capital, except the last, with a dot and a
+        # space.
+        res_name = ''
+        for i in range(num_start_capitals - 1):
+            res_name += abbrev_name[i] + '. '
+
+        remaining_name = abbrev_name[(num_start_capitals - 1):]
+
+        in_between_capitals = regex.finditer(
+            pattern='[[:lower:]]([[:upper:]])[[:lower:]]',
+            string=remaining_name
+        )
+
+        for capital in in_between_capitals:
+            remaining_name = remaining_name.replace(
+                capital.group(1), ' ' + capital.group(1), 1
+            )
+
+        # Append the rest of the name
+        res_name += remaining_name
+
+        return res_name
+
     def get_authors_name(self) -> str:
-        authors_name = self._file_name_elements[-1]
-
         if not self.matches_pattern():
-            return authors_name
+            return self._file_name_elements[-1]
         else:
-            # Count the capital letters at the beginning of the name
-            num_start_capitals = 0
-            while authors_name[num_start_capitals].isupper():
-                num_start_capitals += 1
-
-            res_authors_name = ''
-            for i in range(num_start_capitals - 1):
-                res_authors_name += authors_name[i] + '. '
-
-            res_authors_name += authors_name[(num_start_capitals - 1):]
-
-            return res_authors_name
+            return self._format_abbrev_name(self._file_name_elements[-1])
 
     def get_sanitized_file_name(self) -> str:
-        elements_copy = self._file_name_elements.copy()
+        retainable_elements = [e for e in self._file_name_elements if
+                               not (e.casefold() == 'SIC'.casefold() or
+                                    e.isdigit())]
 
-        for i, element in enumerate(elements_copy):
-            if element == 'SIC' or element.isdigit():
-                elements_copy.pop(i)
-
-        if len(elements_copy) > 1:
-            return ' '.join(elements_copy)
+        if len(retainable_elements) > 1:
+            return ' '.join(retainable_elements)
         else:
-            return elements_copy[0]
+            if retainable_elements[0].isalpha():
+                return self._format_abbrev_name(retainable_elements[0])
+            else:
+                return retainable_elements[0]
 
     def print_mismatch_reasons_to_console(self):
         reasons = ''
