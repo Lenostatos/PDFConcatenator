@@ -6,51 +6,80 @@ import regex
 
 class HeaderExtractor(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, file_path: pathlib.Path):
-        pass
-
-    @abc.abstractmethod
     def extract_header(self) -> str:
         raise NotImplementedError()
 
 
 class SICFileName(HeaderExtractor):
     def __init__(self, file_path: pathlib.Path):
-        super().__init__(file_path)
-        self._file_name = file_path.stem
-        self._file_name_elements = file_path.stem.split(sep='_')
 
-    def matches_pattern(self) -> bool:
-        if len(self._file_name_elements) != 3:
-            return False
-
-        if self._file_name_elements[0] != 'SIC':
-            return False
-
-        if not len(self._file_name_elements[1]) == 2:
-            return False
-
-        if not self._file_name_elements[1].isdigit():
-            return False
-
-        if not self._file_name_elements[2][:2].isupper():
-            return False
-
-        return True
-
-        # return regex.fullmatch(
-        #     pattern='SIC_0[1-4]_[[:upper:]]{2,}[[:lower:]]*',
-        #     string=self._file_name
-        # )
+        self._file_path = file_path
 
     def extract_header(self) -> str:
-        if self.matches_pattern():
-            return self.get_authors_name()
+
+        author = self._try_to_identify_authors_name()
+
+        if author is not None:
+            return self._format_authors_name(author)
         else:
-            return self.get_sanitized_file_name()
+            return self._sanitize_file_name()
+
+    def _try_to_identify_authors_name(self):
+
+        file_name = self._file_path.stem
+        file_name_elements = file_name.split(sep='_')
+
+        if len(file_name_elements) != 3:
+            self._print_warning_with_file(file_name)
+            print(('Expected three elements separated by underscores but '
+                   'found {0} elements.').format(len(file_name_elements)),
+                  end='\n')
+            return None
+
+        if file_name_elements[0] != 'SIC':
+            self._print_warning_with_file(file_name)
+            print(('Expected the first element to have the content "SIC" but '
+                  'it was "{0}" instead.\n').format(file_name_elements[0]),
+                  end='\n')
+            return None
+
+        if not len(file_name_elements[1]) == 2:
+            self._print_warning_with_file(file_name)
+            print(('Expected the second element to contain exactly two '
+                   'characters but found {0}.'
+                   ).format(len(file_name_elements[1])),
+                  end='\n')
+            return None
+
+        if not file_name_elements[1].isdigit():
+            self._print_warning_with_file(file_name)
+            print(('Expected the second element to consist only of digits but'
+                   'found "{0}" instead.\n').format(file_name_elements[1]),
+                  end='\n')
+            return None
+
+        if not file_name_elements[2].isalpha():
+            self._print_warning_with_file(file_name)
+            print(('Expected the third element to contain only letters but '
+                   'found {0} instead.').format(file_name),
+                  end='\n')
+
+        if not file_name_elements[2][:2].isupper():
+            self._print_warning_with_file(file_name)
+            print(('Expected the third element\'s first two letters to be '
+                   'upper case but found {0} instead.'
+                   ).format(file_name_elements[2]),
+                  end='\n')
+            return None
+
+        return file_name_elements[2]
 
     @staticmethod
-    def _format_abbrev_name(abbrev_name: str) -> str:
+    def _print_warning_with_file(file_name: str):
+        print('Warning with file {0}:'.format(file_name), end='\n')
+
+    @staticmethod
+    def _format_authors_name(abbrev_name: str) -> str:
 
         # Count the capital letters at the beginning of the name
         num_start_capitals = 0
@@ -72,7 +101,9 @@ class SICFileName(HeaderExtractor):
 
         for capital in in_between_capitals:
             remaining_name = remaining_name.replace(
-                capital.group(1), ' ' + capital.group(1), 1
+                capital.group(0),  # the full match
+                capital.group(0)[0] + ' ' + capital.group(0)[1:],
+                1
             )
 
         # Append the rest of the name
@@ -80,14 +111,11 @@ class SICFileName(HeaderExtractor):
 
         return res_name
 
-    def get_authors_name(self) -> str:
-        if not self.matches_pattern():
-            return self._file_name_elements[-1]
-        else:
-            return self._format_abbrev_name(self._file_name_elements[-1])
+    def _sanitize_file_name(self) -> str:
 
-    def get_sanitized_file_name(self) -> str:
-        retainable_elements = [e for e in self._file_name_elements if
+        file_name_elements = self._file_path.stem.split(sep='_')
+
+        retainable_elements = [e for e in file_name_elements if
                                not (e.casefold() == 'SIC'.casefold() or
                                     e.isdigit())]
 
@@ -95,32 +123,6 @@ class SICFileName(HeaderExtractor):
             return ' '.join(retainable_elements)
         else:
             if retainable_elements[0].isalpha():
-                return self._format_abbrev_name(retainable_elements[0])
+                return self._format_authors_name(retainable_elements[0])
             else:
                 return retainable_elements[0]
-
-    def print_mismatch_reasons_to_console(self):
-        reasons = ''
-
-        num_elements = len(self._file_name_elements)
-        if num_elements != 3:
-            reasons += ('Expected three elements separated by underscores but '
-                        'found {0}.\n').format(num_elements)
-
-        first_element = self._file_name_elements[0]
-        if first_element != 'SIC':
-            reasons += ('Expected the first element to have the content "SIC" '
-                        'but it was "{0}" instead.\n').format(first_element)
-
-        if num_elements >= 2:
-            second_element = self._file_name_elements[1]
-            if not len(second_element) == 2:
-                reasons += ('Expected the second element to contain exactly '
-                            'two characters but found {0}.\n'
-                            ).format(len(second_element))
-            if not second_element.isdigit():
-                reasons += ('Expected the second element to consist only of '
-                            'digits but found "{0}" instead.\n'
-                            ).format(second_element)
-
-        print(reasons)
