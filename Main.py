@@ -12,14 +12,14 @@ import HelperClasses
 # Path to directory that contains the PDF documents with our answers
 working_directory = pathlib.Path(
     'd:/Studium_ForestInformationTechnology/Scientific_Internet_Colloquium/'
-    'Assignment_3/colleagues_evaluations/'
+    'Assignment_4/colleagues_evaluations/other_group/'
 )
 
 if not working_directory.exists():
     print("Error: The folder with the PDF documents could not be found!")
     exit(code=1)
 
-output_file_name = 'SIC_03_all_answers.pdf'
+output_file_name = 'SIC_04_group_01_all_answers.pdf'
 output_file_path = working_directory / output_file_name
 
 # Delete an existing PDF collection with the same name
