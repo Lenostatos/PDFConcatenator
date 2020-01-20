@@ -12,6 +12,3 @@ This program concatenates PDF files and adds a bookmark with each file. The book
 
 ### This Project's Structure
 You can find the software design, i.e. some pseudo code describing the program's work flow in the file [SoftwareDesign.md](SoftwareDesign.md). Besides that there is just some python code that is all being called in [Main.py](Main.py).
-
-### Current Issues
-I am currently implementing the software design, moving functionality from [HelperFuntions.py](HelperFunctions.py) and [Main.py](Main.py) to classes in [HelperClasses](HelperClasses.py).
